@@ -178,7 +178,7 @@ export default function DashboardPage() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
             <div>
               <Title level={3} style={{ margin: 0 }}>下午好，{user.name}</Title>
-              <Text type="secondary">「人工智能导论」已完成 {done}/{total} 个知识点</Text>
+              <Text type="secondary">「{studentProfile.course || '人工智能导论'}」已完成 {done}/{total} 个知识点</Text>
             </div>
             <div style={{ padding: '12px 16px', borderRadius: 12, background: 'rgba(14,165,233,0.08)', border: '1px solid rgba(14,165,233,0.3)', maxWidth: 360 }}>
               <Text strong style={{ fontSize: 13, color: '#0284C7' }}>今日下一步</Text>

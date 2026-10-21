@@ -12,7 +12,7 @@ const INITIAL_AGENT_STATUS = {
 // 全局状态管理
 const useStore = create((set, get) => ({
   // ============ AI 智育万象（新） ============
-  user: { name: '' },
+  user: { name: localStorage.getItem('studentName') || '' },
   course: '人工智能导论',
   progress: 0,          // 完成度百分比
   gapCount: 0,          // 开放缺口数
@@ -68,7 +68,7 @@ const useStore = create((set, get) => ({
   },
   setStudentName: (name) => {
     localStorage.setItem('studentName', name)
-    set({ studentName: name })
+    set({ studentName: name, user: { name } })
   },
   setStudentProfile: (profile) => {
     localStorage.setItem('studentProfile', JSON.stringify(profile))

@@ -9,7 +9,7 @@ from db.database import init_db
 from kg.kg_data import init_kg_data
 from rag.chroma_client import init_rag_data, chroma_client
 from utils.exceptions import global_exception_handler
-from api import chat, resource, path, kg_api, auth, report, exercise, questionnaire, qa, profile
+from api import chat, resource, path, kg_api, auth, report, exercise, questionnaire, qa, profile, accessibility
 
 
 async def _init_rag_background():
@@ -78,6 +78,7 @@ app.include_router(exercise.router)
 app.include_router(questionnaire.router)
 app.include_router(qa.router)
 app.include_router(profile.router)
+app.include_router(accessibility.router)
 
 
 @app.get("/")
