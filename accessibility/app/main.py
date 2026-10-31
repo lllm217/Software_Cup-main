@@ -5,8 +5,8 @@ main.py —— 入口。构建官方布局，创建 App 引擎，进入官方主
 from app.engine_layout import App, layout
 
 
-def main():
-    app = App(layout)
+def main(demo=False):
+    app = App(layout, demo=demo)
     app.mainLoop()
 
 

@@ -19,10 +19,12 @@ const profileMode = ref(false)
 const profileUser = ref('')
 const profileScores = ref([])
 const profileCourse = ref('')
+const profileAuto = ref(false)
 watch(ctx, value => {
   if (value?.user_id && !profileUser.value) {
     profileUser.value = value.user_id
     profileMode.value = true
+    profileAuto.value = true
   }
   if (value?.subject) profileCourse.value = value.subject
   if (value?.profile_answers?.length === 6) profileScores.value = [...value.profile_answers]
@@ -36,6 +38,7 @@ function startManual() {
       sessionStorage.setItem('ssvep:manual-source', source)
     }
   } catch { source = `manual_${crypto.randomUUID()}` }
+  profileAuto.value = false
   profileUser.value = source
   profileMode.value = true
 }
@@ -86,6 +89,7 @@ function restart() {
   profileUser.value = ''
   profileScores.value = []
   profileCourse.value = ''
+  profileAuto.value = false
   try { sessionStorage.removeItem('ssvep:manual-source') } catch { /* storage unavailable */ }
   send('restart')
 }
@@ -122,6 +126,7 @@ function restart() {
         :user-id="profileUser"
         :course="profileCourse"
         :scores="profileScores"
+        :auto="profileAuto"
       />
     </main>
   </div>

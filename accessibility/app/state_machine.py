@@ -15,6 +15,7 @@ state_machine.py —— 用户应用层页面状态机（新增）。
 """
 import time
 import queue
+import random
 from collections import Counter
 
 from app.window_control import bring_to_front, send_to_back
@@ -37,6 +38,7 @@ BLOCK_FREQ = {0: 6.2, 1: 7.2, 2: 8.2, 3: 9.2, 4: 10.2, 5: 11.2}
 
 # 流程结构（用户层配置，与网页端 Mock 数据保持一致；以后可由网页通过 set_meta 下发）
 PROFILE_COUNT = 6            # 画像题数
+PROFILE_READ_SECONDS = 4.0   # 每道画像题：先展示题目+选项供用户阅读的时长（秒）
 QUIZ_COUNT_PER_STEP = 2      # 每个学习步骤的做题数
 LEARNING_STEP_COUNT = 3      # 学习步骤数
 
@@ -67,10 +69,11 @@ SSVEP_BLOCKS = {
 
 
 class StateMachine:
-    def __init__(self, app, ctx, udp):
+    def __init__(self, app, ctx, udp, demo=False):
         self.app = app          # HGuiEngine 子类，提供 .stimuli / .lock
         self.ctx = ctx          # SSVEPContext 运行时上下文
         self.udp = udp          # UDPResultClient（线程 + queue）
+        self.demo = demo        # 演示模式：无脑电时自动随机决定选项结果
         self.state = State.WAIT_FRONTEND
         self.profile_index = 0
         self.quiz_index = 0
@@ -125,6 +128,7 @@ class StateMachine:
         闪满 FLASH_TIMEOUT 秒，取末尾结果的众数作为采信结果；不稳定则返回 None（不强制选择）。
 
         与官方「闪满 5 秒再取结果」对齐；只改用户层显示/启停，不触碰频率/相位/闪烁模式。
+        演示模式（self.demo）：无需脑电，随机延迟后自动从 allowed 中选一个结果。
         """
         bring_to_front(getattr(self.app, 'hwnd', None))  # 频闪窗恢复置顶，盖住浏览器
         self.udp.drain()  # 进入频闪页前再清空一次队列
@@ -140,10 +144,17 @@ class StateMachine:
                     self.app.stimuli['sti%d' % i].reset(
                         {'visible': False, 'start': False})
 
-        # 闪满 FLASH_TIMEOUT 秒，收集 allowed 内的结果（带时间戳）
+        # 闪满 FLASH_TIMEOUT 秒，收集 allowed 内的结果（带时间戳）。
+        # 演示模式（self.demo）：无需脑电，随机延迟后自动决定一个结果。
         results = []
+        result = None
         deadline = time.time() + FLASH_TIMEOUT
+        demo_pick_at = time.time() + random.uniform(1.0, 3.0) if self.demo else None
         while time.time() < deadline:
+            if demo_pick_at is not None and time.time() >= demo_pick_at:
+                result = random.choice(list(allowed))
+                break
+
             try:
                 r = self.udp.results.get(timeout=0.05)
             except queue.Empty:
@@ -151,8 +162,9 @@ class StateMachine:
             if r in allowed:
                 results.append((time.time(), r))
 
-        # 取末尾 RECENT_SECONDS 的众数（稳定结果）
-        result = self._pick_result(results)
+        if result is None:
+            # 取末尾 RECENT_SECONDS 的众数（稳定结果）
+            result = self._pick_result(results)
 
         # 立即停止刺激；选中块标红作为反馈
         with self.app.lock:
@@ -280,7 +292,8 @@ class StateMachine:
         self.state = State.PROFILE_PROMPT
 
     def _do_profile_prompt(self):
-        self._pause(2.0)
+        # 先展示题目与选项（网页负责文字显示），留出阅读时间，再进入频闪选择。
+        self._pause(PROFILE_READ_SECONDS)
         self.state = State.PROFILE_SSVEP
 
     def _do_profile_ssvep(self):

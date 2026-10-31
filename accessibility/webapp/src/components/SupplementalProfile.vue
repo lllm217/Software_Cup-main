@@ -6,6 +6,7 @@ const props = defineProps({
   userId: { type: String, required: true },
   course: { type: String, default: '' },
   scores: { type: Array, default: () => [] },
+  auto: { type: Boolean, default: false },
 })
 const selectedCourse = ref(props.course || '人工智能导论')
 watch(() => props.course, value => { if (value) selectedCourse.value = value })
@@ -64,6 +65,25 @@ function select(q, option) {
     status.value = '浏览器暂时无法保存，当前选择仅在本次页面中保留。'
   }
 }
+
+// 脑电（SSVEP）自动模式：6 个 1~5 打分 → 6 道题的选项文本 → 直接生成画像并跳转主界面。
+function scoresToAnswers(scores) {
+  const out = {}
+  questions.forEach((q, i) => {
+    const option = q.options[scores[i] - 1]
+    out[q.id] = option ? [option] : []
+  })
+  return out
+}
+
+watch(() => props.scores, (scores) => {
+  if (!props.auto || !Array.isArray(scores) || scores.length !== 6) return
+  if (submitting.value || generated.value) return
+  answers.value = scoresToAnswers(scores)
+  if (completed.value !== questions.length) return
+  status.value = '脑电画像已采集，正在生成画像并跳转主界面…'
+  submit()
+})
 </script>
 
 <template>

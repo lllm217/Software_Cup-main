@@ -67,7 +67,7 @@ for id, setting in enumerate(settings):
 class App(HGuiEngine):
     """用户应用引擎：继承官方 HGuiEngine，复用 mainLoop / stimuli / lock / reset。"""
 
-    def __init__(self, stim):
+    def __init__(self, stim, demo=False):
         super().__init__(stim)
 
         # 新增：运行时上下文 + UDP 结果线程 + 本地 WebSocket 桥 + 状态机
@@ -78,7 +78,7 @@ class App(HGuiEngine):
         self.bridge.start()
         self.hwnd = get_hwnd()         # 频闪窗句柄，用于「前后切」窗口控制
         send_to_back(self.hwnd)        # 启动时先最小化，等前端连上再弹出
-        self.sm = StateMachine(self, self.ctx, self.udp)
+        self.sm = StateMachine(self, self.ctx, self.udp, demo=demo)
 
         # 复用官方 currentStep 机制：恒指向 _tick，由官方 mainLoop 反复调用
         self.currentStep = self._tick
